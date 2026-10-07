@@ -1,5 +1,9 @@
+<!doctype html>
+<html lang="ru">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mapwright</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23b9812f'/%3E%3Cpath d='M3 12V4l3 4 2-3 2 3 3-4v8' fill='none' stroke='%23fff' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -147,6 +151,7 @@ button,input,select,textarea{font:inherit;color:inherit;}
 .savestate{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px;}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;flex:0 0 auto;}
 .dot.dirty{background:var(--warn);}
+.savestate .dot{width:8px;height:8px;box-shadow:none;}
 .problems-btn.has-err{color:var(--bad);border-color:color-mix(in srgb, var(--bad) 50%, var(--line));}
 .problems-btn.has-warn{color:var(--warn);}
 
@@ -172,7 +177,7 @@ button,input,select,textarea{font:inherit;color:inherit;}
 .row.ctx:not(.sel) .lbl{font-weight:600;}
 .row.world{margin-top:6px;border-top:1px solid var(--line, rgba(255,255,255,.08));}
 .row.world .lbl{font-weight:700;letter-spacing:.02em;}
-.crworld{background:var(--panel2, #1d2230);color:inherit;border:1px solid var(--line, rgba(255,255,255,.15));border-radius:6px;padding:3px 6px;font:inherit;font-size:12px;margin-right:6px;max-width:180px;}
+.crworld{background:var(--panel-2);color:inherit;border:1px solid var(--line, rgba(255,255,255,.15));border-radius:6px;padding:3px 6px;font:inherit;font-size:12px;margin-right:6px;max-width:180px;}
 .row .caret{width:16px;height:16px;display:grid;place-items:center;color:var(--faint);flex:0 0 auto;border-radius:4px;border:0;background:transparent;padding:0;cursor:pointer;}
 .row .caret:hover{color:var(--ink);background:var(--panel-3);}
 .row .caret.none{visibility:hidden;}
@@ -205,6 +210,9 @@ button,input,select,textarea{font:inherit;color:inherit;}
 .toolbar .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600;}
 .toolbar .vr{width:1px;align-self:stretch;background:var(--line);margin:0 2px;}
 .toolbar .grow{flex:1 1 auto;}
+.toolbar .seg{flex-wrap:wrap;max-width:100%;}
+.toolbar .seg .btn + .btn{border-left:0;box-shadow:-1px 0 0 var(--line);}
+.toolbar .seg .btn.on{box-shadow:-1px 0 0 var(--line), inset 0 -2px 0 var(--accent);}
 .place-grp{display:inline-flex;flex-direction:column;gap:2px;}
 .sc-par{margin:-4px 0 6px 18px;padding:2px 10px;border-left:3px solid var(--accent);color:var(--accent);font-size:12px;font-weight:600;}
 .place-grp .pg-lab{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);padding-left:3px;}
@@ -223,6 +231,11 @@ button,input,select,textarea{font:inherit;color:inherit;}
 .float-zoom .btn{justify-content:center;width:34px;padding:6px 0;background:var(--panel);box-shadow:var(--shadow);}
 .banner{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);padding:8px 14px;border-radius:8px;box-shadow:var(--shadow);font-weight:600;display:flex;gap:10px;align-items:center;max-width:calc(100% - 24px);}
 .legend{position:absolute;left:10px;bottom:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;box-shadow:var(--shadow);max-width:calc(100% - 70px);}
+.view-opts{position:absolute;right:10px;top:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:11.5px;color:var(--muted);display:flex;gap:10px;align-items:center;box-shadow:var(--shadow);opacity:.88;transition:opacity .12s;}
+.view-opts:hover{opacity:1;}
+.view-opts .check{gap:5px;align-items:center;}
+.view-opts .check input{margin:0;}
+.view-opts .vo-lab{color:var(--faint);}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
 .statusbar{display:flex;gap:14px;align-items:center;padding:6px 10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);min-height:30px;flex-wrap:wrap;}
 .statusbar b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;}
@@ -349,7 +362,7 @@ input[type=range]{width:100%;accent-color:var(--accent);}
 .fx{margin:4px 0 10px;border:1px dashed var(--line);border-radius:8px;background:var(--panel);}
 .fx>summary{cursor:pointer;padding:6px 10px;font-size:12px;color:var(--muted);list-style:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .fx>summary::-webkit-details-marker{display:none;}
-.fx>summary:hover{color:var(--text);}
+.fx>summary:hover{color:var(--ink);}
 .fx-body{padding:4px 10px 10px;display:flex;flex-direction:column;gap:8px;}
 .fx-body .lab{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;}
 .fx-row{display:grid;grid-template-columns:minmax(0,1fr) 70px auto;gap:6px;align-items:center;}
@@ -369,6 +382,27 @@ input[type=range]{width:100%;accent-color:var(--accent);}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;}
 
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--panel);padding:9px 14px;border-radius:9px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px);}
+/* ---------- удобства раскладки: ширина и скрытие боковых панелей ---------- */
+.pane{position:relative;}
+.resizer{position:absolute;top:8px;bottom:8px;width:10px;cursor:col-resize;z-index:5;touch-action:none;}
+#outlinerPane > .resizer{right:-10px;}
+#inspectorPane > .resizer{left:-10px;}
+.resizer::after{content:"";position:absolute;top:50%;left:3px;width:4px;height:42px;margin-top:-21px;border-radius:3px;background:var(--line);opacity:0;transition:opacity .12s;}
+.resizer:hover::after,.resizer.drag::after{opacity:1;background:var(--accent);}
+body.resizing{cursor:col-resize;user-select:none;}
+@media (min-width:1101px){
+  .main{grid-template-columns:var(--lw,270px) minmax(0,1fr) var(--rw,350px);}
+  .main.no-left{grid-template-columns:minmax(0,1fr) var(--rw,350px);}
+  .main.no-right{grid-template-columns:var(--lw,270px) minmax(0,1fr);}
+  .main.no-left.no-right{grid-template-columns:minmax(0,1fr);}
+  .main.no-left #outlinerPane,.main.no-right #inspectorPane{display:none;}
+}
+@media (max-width:1100px){ .resizer,.lay-btn{display:none!important;} }
+.lay-grp{display:inline-flex;gap:2px;}
+.lay-grp .btn{padding:6px 8px;}
+.lay-grp .btn svg{width:16px;height:16px;}
+.sec-all{display:flex;justify-content:flex-end;gap:4px;padding:4px 8px 0;}
+.sec-all .btn{font-weight:500;color:var(--muted);}
 .toast button{background:transparent;border:1px solid color-mix(in srgb, var(--panel) 40%, transparent);color:var(--panel);border-radius:6px;padding:3px 9px;cursor:pointer;font-weight:600;}
 </style>
 
@@ -376,6 +410,7 @@ input[type=range]{width:100%;accent-color:var(--accent);}
   <header class="topbar" id="topbar"></header>
   <div class="main">
     <aside class="pane" id="outlinerPane">
+      <div class="resizer" data-side="left" title="Потяните, чтобы изменить ширину. Двойной клик — как было"></div>
       <div class="pane-head" style="flex-direction:column;align-items:stretch"><div class="ttabs" id="treeTabs"></div><input class="search" id="treeSearch" type="search" placeholder="Поиск по всему: имя, карта, id…  (Ctrl+K — быстрый переход)" autocomplete="off"></div>
       <div class="pane-body" id="outliner"></div>
     </aside>
@@ -387,6 +422,7 @@ input[type=range]{width:100%;accent-color:var(--accent);}
         <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="banner" id="banner" hidden></div>
         <div class="legend" id="legend"></div>
+        <div class="view-opts" id="viewOpts"></div>
         <div class="float-zoom">
           <button class="btn small" id="zoomIn" title="Приблизить (колесо мыши)">+</button>
           <button class="btn small" id="zoomOut" title="Отдалить">−</button>
@@ -396,6 +432,7 @@ input[type=range]{width:100%;accent-color:var(--accent);}
       <div class="statusbar" id="statusbar"></div>
     </section>
     <aside class="pane" id="inspectorPane">
+      <div class="resizer" data-side="right" title="Потяните, чтобы изменить ширину. Двойной клик — как было"></div>
       <div class="pane-body" id="inspector" style="padding:0;"></div>
     </aside>
   </div>
@@ -1112,7 +1149,9 @@ let ui = {
 };
 function saveUi(){
   const keep = {tab:ui.tab, autoGame:ui.autoGame, raiseStep:ui.raiseStep, decoType:ui.decoType, stairsDir:ui.stairsDir, bridgeStyle:ui.bridgeStyle, propType:ui.propType, brush:ui.brush, brushSize:ui.brushSize, brushShape:ui.brushShape, levelValue:ui.levelValue, place:ui.place,
-    showHeights:ui.showHeights, showLabels:ui.showLabels, showArrivals:ui.showArrivals, collapsed:ui.collapsed, secs:ui.secs, ctx:ui.ctx};
+    showHeights:ui.showHeights, showLabels:ui.showLabels, showArrivals:ui.showArrivals, collapsed:ui.collapsed, secs:ui.secs, ctx:ui.ctx,
+    pathKind:ui.pathKind, pathWidth:ui.pathWidth, mechType:ui.mechType, dungeonLook:ui.dungeonLook, propRandRot:ui.propRandRot, propRandScale:ui.propRandScale,
+    lw:ui.lw, rw:ui.rw, hideL:ui.hideL, hideR:ui.hideR, theme:ui.theme};
   lsSet(LS_UI, JSON.stringify(keep));
 }
 function loadUi(){
@@ -1126,10 +1165,11 @@ let saveTimer = null;
 let lastWorkT = 0;
 function scheduleSave(){
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveWorkNow, 300);
+  saveTimer = setTimeout(saveWorkNow, 800);
   scheduleGameAutosave();
 }
 function saveWorkNow(){
+  saveTimer = null;
   const json = JSON.stringify(state);
   lastWorkT = Date.now();
   idbWork("put", "state", {json, t:lastWorkT});
@@ -1219,6 +1259,14 @@ let baseline = "";
 let undoStack = [];
 let redoStack = [];
 const HISTORY_MAX = 150;
+// История — полные снимки мира. На большом мире 150 снимков — сотни мегабайт и
+// вкладка падает; держим не больше ~250 МБ (но не меньше 20 шагов отмены).
+const HISTORY_BUDGET = 120e6;   // символов (≈ 2 байта каждый)
+function trimHistory(stack){
+  let total = 0;
+  for (const x of stack) total += x.length;
+  while (stack.length > 20 && total > HISTORY_BUDGET) total -= stack.shift().length;
+}
 let craftDraft = null;   // раунд 46: рецепты, открытые в инспекторе, но ещё не скопированные в мир
 let defDraft = null;     // раунд 49: встроенный предмет/вещь/приём, открытый в инспекторе ({key, obj, orig})
 // Запись для правки: своя из state[key] или копия встроенной (попадёт в мир только после первой правки)
@@ -1246,6 +1294,7 @@ function commit(){
   cellsRev++;
   undoStack.push(baseline);
   if (undoStack.length > HISTORY_MAX) undoStack.shift();
+  trimHistory(undoStack);
   redoStack = [];
   baseline = cur;
   scheduleSave();
@@ -2093,9 +2142,16 @@ function problems(){
   });
   Object.keys(state.worldMaps).forEach(id=>{
     const m = state.worldMaps[id], sel = {type:"map", id};
-    if (!Object.keys(m.cells).length) add("warn", `Карта «${m.name||id}» пустая — нарисуйте землю`, sel);
+    if (!cellCount(m.cells)) add("warn", `Карта «${m.name||id}» пустая — нарисуйте землю`, sel);
     if (!reach.has(id)) add("warn", `На карту «${m.name||id}» не ведёт ни один переход или пещера — в игре туда не попасть`, sel);
     // раунд 111: лестницы и мосты
+    const {badStairs, badBridge, lowBridge} = cellMemo("stairsBridge", m.cells, cells=> stairsBridgeStats(cells));
+    if (badStairs) add("warn", `«${m.name||id}»: лестниц, ведущих не вверх, — ${badStairs} (красные). Ступени ведут на соседнюю клетку ВЫШЕ — поднимите её или поверните лестницу`, sel);
+    if (badBridge) add("warn", `«${m.name||id}»: мост ни к чему не примыкает (${badBridge} кл.) — проведите его от берега до берега`, sel);
+    if (lowBridge) add("warn", `«${m.name||id}»: мост и берег на разной высоте (разница больше 1) — с моста не сойти. Выровняйте мост кистью «Выровнять»`, sel);
+  });
+  function stairsBridgeStats(cells){
+    const m = {cells};
     let badStairs = 0, badBridge = 0, lowBridge = 0;
     for (const key in m.cells){
       const c = m.cells[key]; if (!c.stairs && !c.bridge) continue;
@@ -2109,10 +2165,8 @@ function problems(){
         if (c.over != null && !c.chasm && Number(c.over) - (Number(c.elevation)||0) < 2) lowBridge++;
       }
     }
-    if (badStairs) add("warn", `«${m.name||id}»: лестниц, ведущих не вверх, — ${badStairs} (красные). Ступени ведут на соседнюю клетку ВЫШЕ — поднимите её или поверните лестницу`, sel);
-    if (badBridge) add("warn", `«${m.name||id}»: мост ни к чему не примыкает (${badBridge} кл.) — проведите его от берега до берега`, sel);
-    if (lowBridge) add("warn", `«${m.name||id}»: мост и берег на разной высоте (разница больше 1) — с моста не сойти. Выровняйте мост кистью «Выровнять»`, sel);
-  });
+    return {badStairs, badBridge, lowBridge};
+  }
 
   state.containers.forEach(c=>{
     const sel = {type:"container", id:c.id};
@@ -2264,7 +2318,7 @@ function problems(){
   };
   // раунд 85: где водятся монстры — уровень лучше задать (иначе мир
   // подстраивается под героя и не чувствуется рост)
-  const hasDanger = h=> (h.cells && typeof h.cells === "object" && Object.values(h.cells).some(c=>c && c.zone==="danger")) || (Array.isArray(h.monsters) && h.monsters.length > 0);
+  const hasDanger = h=> (h.cells && typeof h.cells === "object" && cellMemo("danger", h.cells, cs=> Object.values(cs).some(c=>c && c.zone==="danger"))) || (Array.isArray(h.monsters) && h.monsters.length > 0);
   const levelUnset = (holder, label, sel)=>{ if (hasDanger(holder) && !(Number(holder.levelMin)||0) && !(Number(holder.levelMax)||0)) add("warn", `${label}: уровень монстров не задан — они подстраиваются под героя (Свойства → «Монстры»: уровень от / до)`, sel); };
   Object.keys(state.worldMaps).forEach(id=> levelUnset(state.worldMaps[id], `Карта «${mapName(id)}»`, {type:"map", id}));
   allFloors().forEach(({house, floor})=> levelUnset(floor, `«${house.name} › ${floor.name}»`, {type:"floor", id:floor.id}));
@@ -2486,6 +2540,78 @@ function selGlyph(sel){
   return glyph("");
 }
 
+/* ============================ раскладка и тема ============================
+   Только вид редактора: ширина/скрытие боковых панелей и светлая/тёмная тема.
+   Хранится в ui (localStorage), на мир и игру не влияет. */
+const THEMES = {"":"как в системе", light:"светлая", dark:"тёмная"};
+const LAY_SVG = (inner)=> `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">${inner}</svg>`;
+const LAY_ICON = {
+  left: LAY_SVG(`<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M5.5 2.5v11"/><path d="M2 4.5h3M2 6.5h3" stroke-width="1"/>`),
+  right: LAY_SVG(`<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M10.5 2.5v11"/><path d="M11 4.5h3M11 6.5h3" stroke-width="1"/>`),
+  auto: LAY_SVG(`<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/>`),
+  light: LAY_SVG(`<circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/>`),
+  dark: LAY_SVG(`<path d="M13.5 9.5A5.5 5.5 0 1 1 6.5 2.5a4.5 4.5 0 0 0 7 7z"/>`),
+};
+const PANE_W = {left:[270, 190, 560], right:[350, 260, 720]};   // [обычная, мин, макс]
+function applyLayout(){
+  const main = document.querySelector(".main");
+  if (!main) return;
+  main.style.setProperty("--lw", clamp(Number(ui.lw)||PANE_W.left[0], PANE_W.left[1], PANE_W.left[2]) + "px");
+  main.style.setProperty("--rw", clamp(Number(ui.rw)||PANE_W.right[0], PANE_W.right[1], PANE_W.right[2]) + "px");
+  main.classList.toggle("no-left", !!ui.hideL);
+  main.classList.toggle("no-right", !!ui.hideR);
+  if (ui.theme) document.documentElement.dataset.theme = ui.theme; else delete document.documentElement.dataset.theme;
+}
+function togglePane(side){
+  if (side === "left") ui.hideL = !ui.hideL; else ui.hideR = !ui.hideR;
+  applyLayout(); saveUi(); renderTopbar(); requestCanvas();
+}
+function toggleFocusMode(){
+  const hide = !(ui.hideL && ui.hideR);
+  ui.hideL = hide; ui.hideR = hide;
+  applyLayout(); saveUi(); renderTopbar(); requestCanvas();
+  toast(hide ? "Только карта. Клавиша \\ — вернуть панели" : "Панели снова на месте");
+}
+function cycleTheme(){
+  const order = ["", "light", "dark"];
+  ui.theme = order[(order.indexOf(ui.theme||"") + 1) % order.length];
+  applyLayout(); saveUi(); _tcss = null; _pats = null; _hSprites.clear(); renderTopbar(); requestCanvas();
+  toast("Тема: " + THEMES[ui.theme]);
+}
+document.querySelectorAll(".resizer").forEach(h=>{
+  const side = h.dataset.side;
+  h.addEventListener("pointerdown", ev=>{
+    if (ev.button !== 0) return;
+    ev.preventDefault();
+    h.setPointerCapture(ev.pointerId);
+    h.classList.add("drag"); document.body.classList.add("resizing");
+    const r = h.parentElement.getBoundingClientRect();
+    const move = (e)=>{
+      const [, mn, mx] = PANE_W[side];
+      const w = Math.round(clamp(side === "left" ? e.clientX - r.left : r.right - e.clientX, mn, mx));
+      if (side === "left") ui.lw = w; else ui.rw = w;
+      applyLayout();
+    };
+    const up = ()=>{
+      h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up);
+      h.classList.remove("drag"); document.body.classList.remove("resizing");
+      saveUi(); requestCanvas();
+    };
+    h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+  });
+  h.addEventListener("dblclick", ()=>{ if (side === "left") ui.lw = null; else ui.rw = null; applyLayout(); saveUi(); requestCanvas(); });
+});
+// «Развернуть все / Свернуть все» над разделами инспектора — когда их много
+function addSecAllBar(el){
+  const secs = el.querySelectorAll(":scope > details.sec, :scope > * > details.sec");
+  if (secs.length < 3) return;
+  const bar = document.createElement("div");
+  bar.className = "sec-all";
+  bar.innerHTML = `<button class="btn ghost small" data-secall="1" title="Открыть все разделы ниже">Развернуть все</button><button class="btn ghost small" data-secall="0" title="Закрыть все разделы ниже — видно только заголовки">Свернуть все</button>`;
+  secs[0].parentNode.insertBefore(bar, secs[0]);
+  bar.querySelectorAll("[data-secall]").forEach(b=> b.onclick = ()=>{ const open = b.dataset.secall === "1"; secs.forEach(d=>{ d.open = open; ui.secs[d.dataset.sec] = open; }); saveUi(); });
+}
+
 /* ============================ верхняя панель ============================ */
 let _dirtyB = null, _dirtyH = "";
 function isGameDirty(){
@@ -2502,6 +2628,11 @@ function renderTopbar(){
     <div class="brand"><h1>Mapwright</h1><span class="sub">редактор мира jrpg-proto</span></div>
     <button class="btn ghost" id="tbUndo" title="Отменить (Ctrl+Z)" ${undoStack.length?"":"disabled"}>${glyph("undo")}</button>
     <button class="btn ghost" id="tbRedo" title="Повторить (Ctrl+Shift+Z)" ${redoStack.length?"":"disabled"}>${glyph("redo")}</button>
+    <span class="lay-grp">
+      <button class="btn ghost lay-btn ${ui.hideL?"":"on"}" id="tbLeft" title="${ui.hideL?"Показать":"Скрыть"} левую панель (дерево)">${LAY_ICON.left}</button>
+      <button class="btn ghost lay-btn ${ui.hideR?"":"on"}" id="tbRight" title="${ui.hideR?"Показать":"Скрыть"} правую панель (свойства)">${LAY_ICON.right}</button>
+      <button class="btn ghost" id="tbTheme" title="Тема: ${THEMES[ui.theme||""]} — нажмите, чтобы сменить">${LAY_ICON[ui.theme||"auto"]}</button>
+    </span>
     <span class="grow"></span>
     <button class="btn problems-btn ${errs?"has-err":(warns?"has-warn":"")}" id="tbProblems" title="Что стоит поправить">
       ${errs||warns ? glyph("warn") : glyph("ok")} ${errs||warns ? `${errs?`${errs} ${plural(errs,"ошибка","ошибки","ошибок")}`:""}${errs&&warns?" · ":""}${warns?`${warns} ${plural(warns,"замечание","замечания","замечаний")}`:""}` : "Ошибок нет"}
@@ -2538,6 +2669,9 @@ function renderTopbar(){
   const ta = el.querySelector("#tbAuto");
   if (ta) ta.onclick = (ev)=>{ ev.preventDefault(); if (ui.autoGame && ui.autoGameBlocked){ fileHandle.requestPermission({mode:"readwrite"}).then(p=>{ ui.autoGameBlocked = p !== "granted"; renderTopbar(); gameAutosaveNow(); }); return; } toggleAutoGame(); };
   el.querySelector("#tbHelp").onclick = openHelp;
+  el.querySelector("#tbLeft").onclick = ()=> togglePane("left");
+  el.querySelector("#tbRight").onclick = ()=> togglePane("right");
+  el.querySelector("#tbTheme").onclick = cycleTheme;
   el.querySelector("#tbMenu").onclick = (ev)=>{ ev.stopPropagation(); ui.menu = !ui.menu; renderTopbar(); };
   el.querySelectorAll("[data-m]").forEach(b=> b.onclick = ()=>{ ui.menu = false; renderTopbar(); menuAction(b.dataset.m); });
 }
@@ -2597,7 +2731,7 @@ function renderOutliner(){
     const key = "map:"+mid;
     const start = rows.length;
     const root = d === 0;
-    const header = {depth:d, sel:{type:"map", id:mid}, label:m.name||mid, meta:`${root ? "мир · " : m.dungeon ? "данж · " : ""}${Object.keys(m.cells).length} кл.`, glyph:glyph(m.dungeon?"dungeonmap":(m.isCave?"cavemap":"map")), kids:true, key, ctx: ui.ctx.kind==="map" && ui.ctx.id===mid, world: root};
+    const header = {depth:d, sel:{type:"map", id:mid}, label:m.name||mid, meta:`${root ? "мир · " : m.dungeon ? "данж · " : ""}${cellCount(m.cells)} кл.`, glyph:glyph(m.dungeon?"dungeonmap":(m.isCave?"cavemap":"map")), kids:true, key, ctx: ui.ctx.kind==="map" && ui.ctx.id===mid, world: root};
     rows.push(header);
     const open = q || !ui.collapsed[key];
     let childAny = false;
@@ -2988,7 +3122,7 @@ function renderToolbar(){
   }
   if (ui.tool==="brush"){
     html += `<div style="flex-basis:100%;height:0"></div>
-      <span class="seg">${brushModes().map(([id,label,tip])=>`<button class="btn small ${ui.brush===id?"on":""}" data-brush="${id}" title="${esc(tip)}">${label}</button>`).join("")}</span>
+      <span class="seg">${brushModes().map(([id,label,tip], i)=>`<button class="btn small ${ui.brush===id?"on":""}" data-brush="${id}" title="${esc(tip)}${i<10?` (клавиша ${(i+1)%10})`:""}">${label}${i<10?` <span class="k">${(i+1)%10}</span>`:""}</button>`).join("")}</span>
       ${ui.brush==="raise" || ui.brush==="lower" ? `<span class="lab">шаг</span><span class="seg">${[1,2,3,5].map(n=>`<button class="btn small ${(ui.raiseStep||1)===n?"on":""}" data-rstep="${n}" title="на сколько уровней за клик">${ui.brush==="raise"?"+":"−"}${n}</button>`).join("")}</span>` : ""}
       ${ui.brush==="level" ? `<label class="lab" for="levelVal">высота</label><input type="number" id="levelVal" min="-50" max="50" step="1" value="${ui.levelValue}">` : ""}
       ${ui.brush==="deco" ? `<span class="seg">${DECOS.map(([id,label])=>`<button class="btn small ${(ui.decoType||"path")===id?"on":""}" data-deco="${id}" title="${esc(label)}">${label}</button>`).join("")}</span>` : ""}
@@ -3002,11 +3136,13 @@ function renderToolbar(){
         <button class="btn small ${ui.brushShape==="rect"?"on":""}" data-bshape="rect" title="Протянуть прямоугольник">Прямоугольник</button>
       </span>`;
   }
-  html += `<span class="grow"></span>
-    <label class="check lab" title="Показывать высоту клеток"><input type="checkbox" id="optHeights" ${ui.showHeights?"checked":""}> высоты</label>
-    <label class="check lab" title="Показывать подписи объектов"><input type="checkbox" id="optLabels" ${ui.showLabels?"checked":""}> подписи</label>
-    ${!isFloorCtx() ? `<label class="check lab" title="Показывать, куда приходит игрок с других карт"><input type="checkbox" id="optArrivals" ${ui.showArrivals?"checked":""}> прибытия</label>` : ""}`;
   el.innerHTML = html;
+  // «вид» — в углу карты, а не отдельной строкой панели инструментов
+  const vo = document.getElementById("viewOpts");
+  vo.innerHTML = `<span class="vo-lab">Показать:</span>
+    <label class="check" title="Показывать высоту клеток"><input type="checkbox" id="optHeights" ${ui.showHeights?"checked":""}> высоты</label>
+    <label class="check" title="Показывать подписи объектов"><input type="checkbox" id="optLabels" ${ui.showLabels?"checked":""}> подписи</label>
+    ${!isFloorCtx() ? `<label class="check" title="Показывать, куда приходит игрок с других карт"><input type="checkbox" id="optArrivals" ${ui.showArrivals?"checked":""}> прибытия</label>` : ""}`;
   el.querySelectorAll("[data-tool]").forEach(b=> b.onclick = ()=> setTool(b.dataset.tool));
   el.querySelectorAll("[data-place]").forEach(b=> b.onclick = ()=>{ ui.place = b.dataset.place; setTool("place"); });
   el.querySelectorAll("[data-brush]").forEach(b=> b.onclick = ()=>{ ui.brush = b.dataset.brush; setTool("brush"); });
@@ -3026,9 +3162,9 @@ function renderToolbar(){
   el.querySelectorAll("[data-prscale]").forEach(b=> b.onclick = ()=>{ ui.propRandScale = Number(b.dataset.prscale); saveUi(); renderToolbar(); });
   el.querySelectorAll("[data-bshape]").forEach(b=> b.onclick = ()=>{ ui.brushShape = b.dataset.bshape; saveUi(); renderToolbar(); });
   const lv = el.querySelector("#levelVal"); if (lv) lv.onchange = ()=>{ ui.levelValue = clamp(parseInt(lv.value)||0,-50,50); saveUi(); };
-  el.querySelector("#optHeights").onchange = e=>{ ui.showHeights = e.target.checked; saveUi(); renderCanvas(); };
-  el.querySelector("#optLabels").onchange = e=>{ ui.showLabels = e.target.checked; saveUi(); renderCanvas(); };
-  const oa = el.querySelector("#optArrivals"); if (oa) oa.onchange = e=>{ ui.showArrivals = e.target.checked; saveUi(); renderCanvas(); };
+  vo.querySelector("#optHeights").onchange = e=>{ ui.showHeights = e.target.checked; saveUi(); renderCanvas(); };
+  vo.querySelector("#optLabels").onchange = e=>{ ui.showLabels = e.target.checked; saveUi(); renderCanvas(); };
+  const oa = vo.querySelector("#optArrivals"); if (oa) oa.onchange = e=>{ ui.showArrivals = e.target.checked; saveUi(); renderCanvas(); };
 }
 function setTool(t){
   finishPath();
@@ -3039,7 +3175,10 @@ function setTool(t){
 /* ============================ вид холста ============================
    view = {cx, cz, scale} — центр в метрах и пикселей на метр. */
 const svg = document.getElementById("mapSvg");
-function vpSize(){ const r = svg.getBoundingClientRect(); return {w: Math.max(r.width, 60), h: Math.max(r.height, 60)}; }
+// размер холста берём из ResizeObserver (ниже): чтение getBoundingClientRect сразу
+// после перерисовки панелей заставляло браузер пересчитывать всю раскладку
+let _vp = null;
+function vpSize(){ if (!_vp){ const r = svg.getBoundingClientRect(); if (!r.width || !r.height) return {w: Math.max(r.width, 60), h: Math.max(r.height, 60)}; _vp = {w: r.width, h: r.height}; } return {w: Math.max(_vp.w, 60), h: Math.max(_vp.h, 60)}; }
 function computeFit(){
   const b = cellBounds(ctxCells());
   const x0 = (b.minCx-1)*CELL - CELL/2, x1 = (b.maxCx+1)*CELL + CELL/2;
@@ -3491,7 +3630,9 @@ function renderCanvas(){
   // превью кисти / прямоугольника / курсора
   s += `<g id="overlay">${overlaySvg(k)}</g>`;
   svg.querySelector("#lyObjs").innerHTML = s;
-  declutterLabels(svg.querySelector("#lyObjs"));
+  // крутим колесо — раскладку подписей посчитать один раз, когда масштаб остановится
+  if (performance.now() < wheelBusyUntil){ clearTimeout(wheelDeclutterT); wheelDeclutterT = setTimeout(()=>{ const g = svg.querySelector("#lyObjs"); if (g) declutterLabels(g); }, 180); }
+  else declutterLabels(svg.querySelector("#lyObjs"));
   svg.__k = k;
   renderLegend();
   renderBanner();
@@ -3541,6 +3682,20 @@ function terrainPatterns(ctx){
 // cellsRev растёт при любой правке клеток (кисть, commit, отмена, загрузка) —
 // по нему живут кэши: снимок земли, список переходов.
 let cellsRev = 1;
+// Кэш «по клеткам» (ускорение большого мира): результат f(cells) живёт, пока не
+// изменился cellsRev (любая правка клеток его увеличивает) — не перебирать
+// десятки тысяч клеток на каждом кадре и каждой нажатой букве.
+const _cellMemo = new Map();
+function cellMemo(name, cells, f){
+  if (!cells || typeof cells !== "object") return f(cells || {});
+  let wm = _cellMemo.get(name);
+  if (!wm){ wm = new WeakMap(); _cellMemo.set(name, wm); }
+  const hit = wm.get(cells);
+  if (hit && hit.rev === cellsRev) return hit.v;
+  const v = f(cells);
+  wm.set(cells, {rev: cellsRev, v});
+  return v;
+}
 // Снимок всей земли места в текущем масштабе (если помещается в память):
 // панорама — только сдвиг готовой картинки, мазок кисти дорисовывает кусок.
 let _tcache = null;   // {cv, key, rev, s, x0, z0, cx0, cx1, cz0, cz1}
@@ -3565,7 +3720,9 @@ function heightSprite(e, dpr){
   _hSprites.set(key, sp);
   return sp;
 }
-function mapCellBounds(cells){
+function cellCount(cells){ return cellMemo("count", cells, c=> Object.keys(c).length); }
+function mapCellBounds(cells){ return cells && typeof cells === "object" ? cellMemo("bounds", cells, mapCellBoundsRaw) : null; }
+function mapCellBoundsRaw(cells){
   let cx0 = Infinity, cx1 = -Infinity, cz0 = Infinity, cz1 = -Infinity;
   for (const key in cells){ const i = key.indexOf(","); const x = +key.slice(0, i), z = +key.slice(i + 1); if (x < cx0) cx0 = x; if (x > cx1) cx1 = x; if (z < cz0) cz0 = z; if (z > cz1) cz1 = z; }
   return cx0 === Infinity ? null : {cx0: cx0 - 1, cx1: cx1 + 1, cz0: cz0 - 1, cz1: cz1 + 1};
@@ -3689,7 +3846,7 @@ function terrainEnv(){
   const floor = isFloorCtx();
   const map = floor ? null : state.worldMaps[ui.ctx.id];
   const ff = floor ? findFloor(ui.ctx.id) : null;
-  return {floor, map, ff, slopesOn: !!(map && map.slopes), pats: null, count: Object.keys(ctxCells()).length};
+  return {floor, map, ff, slopesOn: !!(map && map.slopes), pats: null, count: cellCount(ctxCells())};
 }
 function drawTerrain(v, vb, k){
   if (!terrainCv) return;
@@ -3783,7 +3940,7 @@ function patchTerrainCache(keys, before){
   tc.rev = cellsRev;
   return true;
 }
-window.addEventListener("resize", ()=> requestCanvas());
+window.addEventListener("resize", ()=>{ _vp = null; requestCanvas(); });
 let panQueued = false;
 // Подписи объектов не налезают друг на друга (раунд 49): поверх лежащая (нарисована
 // позже) и подпись выделенного — главнее; спрятанные появятся при приближении.
@@ -4256,14 +4413,16 @@ svg.addEventListener("dblclick", ev=>{
   const objEl = ev.target.closest("[data-obj]");
   if (objEl) enterSel(selFromEl(objEl));
 });
+let wheelBusyUntil = 0, wheelDeclutterT = null;
 svg.addEventListener("wheel", ev=>{
   ev.preventDefault();
+  wheelBusyUntil = performance.now() + 160;
   zoomAt(ev.deltaY > 0 ? 1/1.15 : 1.15, ev.clientX, ev.clientY);
 }, {passive:false});
 document.getElementById("zoomIn").onclick = ()=> zoomAt(1.35);
 document.getElementById("zoomOut").onclick = ()=> zoomAt(1/1.35);
 document.getElementById("zoomFit").onclick = ()=>{ fitView(); renderCanvas(); };
-new ResizeObserver(()=> requestCanvas()).observe(document.getElementById("viewport"));
+new ResizeObserver(()=>{ _vp = null; requestCanvas(); }).observe(document.getElementById("viewport"));
 /* ============================ инспектор: основа ============================
    Форма собирается строкой HTML, а обработчики регистрируются рядом (binds)
    и навешиваются после вставки. Ввод текста/чисел меняет данные сразу
@@ -4475,6 +4634,7 @@ function renderInspector(){
   el.innerHTML = html;
   F.binds.forEach(b=>b());
   el.querySelectorAll("details.sec").forEach(d=> d.addEventListener("toggle", ()=>{ ui.secs[d.dataset.sec] = d.open; saveUi(); }));
+  addSecAllBar(el);
   decorateTips(el);
 }
 
@@ -7871,6 +8031,8 @@ function openHelp(){
       ${k(["V"], "выбор и перемещение")}
       ${k(["B"], "кисть рельефа")}
       ${k(["[", "]"], "размер кисти")}
+      ${k(["1","…","0"], "с кистью — режим: 1 Земля, 2 Стереть, 3 Выше, 4 Ниже… (номер виден на кнопке)")}
+      ${k(["/"], "поиск по дереву слева")}
       ${k(["Shift"], "с кистью — обратное действие; при добавлении — ставить несколько")}
       ${k(["Alt","клик"], "с кистью — взять высоту клетки для «Выровнять»")}
       ${k(["Пробел","тянуть"], "двигать карту (или правая/средняя кнопка)")}
@@ -7885,7 +8047,15 @@ function openHelp(){
       ${k(["Ctrl","Shift","Z"], "повторить")}
       ${k(["Ctrl","S"], "сохранить в игру")}
       ${k(["Esc"], "отмена / снять выделение")}
+      ${k(["\\"], "спрятать / вернуть обе боковые панели — только карта")}
     </div>
+    <h3 style="font-size:16px;margin:16px 0 6px;">Удобства</h3>
+    <ul class="steps">
+      <li>Границу между картой и боковой панелью можно <b>тянуть мышью</b> — панель станет шире или уже. Двойной клик по границе — вернуть как было.</li>
+      <li>Значки рядом с «Отменить/Повторить»: <b>спрятать левую или правую панель</b> (больше места для карты) и <b>тема</b> — светлая, тёмная или как в системе.</li>
+      <li>Над разделами справа — <b>«Развернуть все» / «Свернуть все»</b>, чтобы быстро найти нужный раздел.</li>
+      <li>Редактор запоминает выбранные инструменты (вид и ширину дорожки, механизм, вход в данж, поворот и размер декора).</li>
+    </ul>
     <h3 style="font-size:16px;margin:16px 0 6px;">Сохранение</h3>
     <p class="hint">Редактор сам хранит работу в этом браузере. «Сохранить в игру» в Chrome или Edge один раз спросит файл — выберите <code>world/world_data.json</code> в папке игры, дальше запись идёт туда сразу. В других браузерах файл скачивается — положите его в <code>world/</code> вручную.</p>
   `);
@@ -9495,6 +9665,13 @@ document.addEventListener("keydown", ev=>{
   }
   if (key === "Enter"){ if (ui.sel) enterSel(ui.sel); return; }
   if (key === "?"){ openHelp(); return; }
+  if (is("Backslash", "\\")){ toggleFocusMode(); return; }
+  if (key === "/" || (ev.code === "Slash" && !ev.shiftKey)){ ev.preventDefault(); if (ui.hideL) togglePane("left"); const ts = document.getElementById("treeSearch"); ts.focus(); ts.select(); return; }
+  if (ui.tool === "brush" && /^Digit[0-9]$/.test(ev.code) && !ev.shiftKey && !ev.altKey){
+    const n = Number(ev.code.slice(5)), m = brushModes()[n === 0 ? 9 : n - 1];
+    if (m){ ui.brush = m[0]; setTool("brush"); }
+    return;
+  }
   const arrows = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]};
   if (arrows[key] && (ui.multi||[]).length > 1){
     ev.preventDefault();
@@ -9661,6 +9838,7 @@ function repairState(){
 }
 function start(initial){
   loadUi();
+  applyLayout();
   let data = initial && Object.keys(initial).length ? initial : null;
   if (!data){
     for (const k of [LS_STATE, LS_STATE_V2]){
@@ -9686,5 +9864,7 @@ function start(initial){
 if (window.claude?.hot) window.claude.hot.snapshot(()=> state);
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? null);
 window.addEventListener("beforeunload", ()=>{ commit(); saveWorkNow(); });
+// вкладку свернули или переключились на игру — сохранить сразу, не дожидаясь паузы
+document.addEventListener("visibilitychange", ()=>{ if (document.hidden && saveTimer){ clearTimeout(saveTimer); saveTimer = null; saveWorkNow(); } });
 })();
 </script>
