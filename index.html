@@ -365,6 +365,15 @@ input[type=range]{width:100%;accent-color:var(--accent);}
 .fx>summary:hover{color:var(--ink);}
 .fx-body{padding:4px 10px 10px;display:flex;flex-direction:column;gap:8px;}
 .fx-body .lab{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;}
+.fxg{display:flex;gap:6px;align-items:flex-end;padding:6px 6px 6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);}
+.fxg-body{flex:1 1 auto;min-width:0;}
+.fxg-x{flex:0 0 auto;color:var(--faint);}
+.fxg-x:hover{color:var(--bad);}
+.fx-add{display:flex;flex-wrap:wrap;gap:4px;}
+.fx-chip{background:transparent;border-style:dashed;color:var(--muted);font-weight:500;}
+.fx-chip:hover{color:var(--ink);border-style:solid;}
+.fx .field > span:has(select){display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.fx .field > span > select{width:auto;padding:1px 4px;font-size:11px;}
 .fx-row{display:grid;grid-template-columns:minmax(0,1fr) 70px auto;gap:6px;align-items:center;}
 .fx-row.eq{grid-template-columns:minmax(0,1fr) 70px minmax(0,110px) 70px auto;}
 .preview{position:sticky;top:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#15131a;color:#efeaf6;}
@@ -4512,13 +4521,25 @@ function makeForm(prefix){
   return f;
 }
 // условия (раунд 49) в инспекторе: c — объект, в который пишутся поля
-function condFormF(F, c){
+function condFormF(F, c, ok){
   const flagId = (v)=> String(v||"").trim() ? sanitizeId(v) : "";
-  let h = `<div class="grid2">${F.text("Есть отметка", c.needFlag||"", v=>c.needFlag=flagId(v), {mono:true, lazy:true, list:"flagList", placeholder:"не важно"})}${F.text("И нет отметки", c.noFlag||"", v=>c.noFlag=flagId(v), {mono:true, lazy:true, list:"flagList", placeholder:"не важно"})}</div>`;
-  h += `<div class="grid2">${F.select("Есть предмет", c.needItem||"", itemOptionsAny(c.needItem), v=>c.needItem=v)}${c.needItem ? F.num("сколько", c.needQty||1, v=>c.needQty=v, {int:true, min:1, max:999}) : F.select("Нет предмета", c.noItem||"", itemOptionsAny(c.noItem), v=>c.noItem=v)}</div>`;
-  h += `<div class="grid2">${F.select("Задание", c.quest||"", questOptionsAny(), v=>c.quest=v)}${c.quest ? F.select("в состоянии", c.questState||"active", QUEST_STATES, v=>c.questState=v) : F.num("Уровень героя от", c.minLevel||0, v=>c.minLevel=v, {int:true, min:0, max:99})}</div>`;
-  h += `<div class="grid3">${F.text("Счётчик", c.varName||"", v=>c.varName=flagId(v), {mono:true, lazy:true, list:"varList", placeholder:"не важно"})}${c.varName ? F.select("должен быть", c.varCmp||">=", VAR_CMPS, v=>c.varCmp=v) + F.num("число", c.varValue||0, v=>c.varValue=v, {int:true}) : "<span></span><span></span>"}</div>`;
-  return h;
+  // видны только заданные условия; остальные — кнопками «+ …» (как в ответах разговора)
+  const G = {
+    cflags: ()=> `<div class="grid2">${F.text("Есть отметка", c.needFlag||"", v=>c.needFlag=flagId(v), {mono:true, lazy:true, list:"flagList", placeholder:"не важно"})}${F.text("И нет отметки", c.noFlag||"", v=>c.noFlag=flagId(v), {mono:true, lazy:true, list:"flagList", placeholder:"не важно"})}</div>`,
+    needItem: ()=> `<div class="grid2">${F.select("Есть предмет", c.needItem||"", itemOptionsAny(c.needItem), v=>c.needItem=v)}${F.num("сколько", c.needQty||1, v=>c.needQty=v, {int:true, min:1, max:999})}</div>`,
+    noItem: ()=> `<div class="grid2">${F.select("Нет предмета", c.noItem||"", itemOptionsAny(c.noItem), v=>c.noItem=v)}<span></span></div>`,
+    quest: ()=> `<div class="grid2">${F.select("Задание", c.quest||"", questOptionsAny(), v=>c.quest=v)}${F.select("в состоянии", c.questState||"active", QUEST_STATES, v=>c.questState=v)}</div>`,
+    level: ()=> `<div class="grid2">${F.num("Уровень героя от", c.minLevel||0, v=>c.minLevel=v, {int:true, min:0, max:99})}<span></span></div>`,
+    varc: ()=> `<div class="grid3">${F.text("Счётчик", c.varName||"", v=>c.varName=flagId(v), {mono:true, lazy:true, list:"varList", placeholder:"не важно"})}${F.select("должен быть", c.varCmp||">=", VAR_CMPS, v=>c.varCmp=v)}${F.num("число", c.varValue||0, v=>c.varValue=v, {int:true})}</div>`,
+  };
+  const NAMES = {cflags:"Отметка", needItem:"Есть предмет", noItem:"Нет предмета", quest:"Задание", level:"Уровень героя", varc:"Счётчик"};
+  let h = "", add = "";
+  Object.keys(G).forEach(name=>{
+    if (fxShown(c, name, ok)) h += `<div class="fxg"><div class="fxg-body">${G[name]()}</div>${F.button("✕", ()=>{ fxClear(c, name, ok); commit(); render(); }, "ghost fxg-x")}</div>`;
+    else add += F.button("+ " + NAMES[name], ()=>{ fxOpenSet(ok || c).add(name); renderInspector(); }, "fx-chip");
+  });
+  if (!h) h = `<p class="hint" style="margin:0">Условий нет.</p>`;
+  return h + (add ? `<div class="fx-add">${add}</div>` : "");
 }
 function sec(key, title, body, openDefault=true){
   const open = ui.secs[key] == null ? openDefault : ui.secs[key];
@@ -5645,7 +5666,7 @@ function insNpc(F, sel){
     const S = ()=>{ n.show = n.show || {}; return n.show; };
     const proxy = new Proxy(sh, {set(_, k, v){ S()[k] = v; return true; }, get(_, k){ return (n.show||{})[k]; }});
     html += sec("npc_show", condHas(n.show) ? `Когда житель в мире · ${esc(short(condText(n.show)))}` : "Когда житель в мире",
-      `<p class="hint">Пусто — всегда. Иначе житель появляется, только когда всё выполнено, и уходит, когда перестаёт (прямо на глазах, с облачком). Так делается «гонец пришёл после боя», «торговец уехал после задания».</p>${condFormF(F, proxy)}
+      `<p class="hint">Пусто — всегда. Иначе житель появляется, только когда всё выполнено, и уходит, когда перестаёт (прямо на глазах, с облачком). Так делается «гонец пришёл после боя», «торговец уехал после задания».</p>${condFormF(F, proxy, n)}
       ${condHas(n.show) ? F.button("Всегда в мире (очистить)", ()=>{ delete n.show; commit(); render(); }) : ""}`, condHas(n.show));
   }
   html += sec("npc_where", "Где стоит", `
@@ -6573,6 +6594,23 @@ function closeModal(){
 }
 function nodeTitle(nd){ return `«${short(nd.text)}»`; }
 // блок «Последствия и условия» под ответом
+// какие группы полей ответа видны: заданные + открытые кнопкой «+ …» (только вид, в мир не пишется)
+const _fxOpen = new WeakMap();
+function fxOpenSet(o){ let st = _fxOpen.get(o); if (!st){ st = new Set(); _fxOpen.set(o, st); } return st; }
+const FX_COND = ["rel","cflags","level","needItem","noItem","gold","quest","varc"];
+const FX_HAS = {
+  flags: c=> !!(c.setFlag || c.clearFlag), varop: c=> !!c.varOpName, next: c=> !!c.talkNext,
+  rel: c=> c.relMin != null || c.relMax != null, cflags: c=> !!(c.needFlag || c.noFlag), level: c=> !!Number(c.minLevel),
+  needItem: c=> !!c.needItem, noItem: c=> !!c.noItem, gold: c=> !!Number(c.minGold), quest: c=> !!c.quest, varc: c=> !!c.varName,
+};
+const FX_CLEAR = {
+  flags: ["setFlag","clearFlag"], varop: ["varOpName","varOp","varOpValue"], next: ["talkNext","talkNode"],
+  rel: ["relMin","relMax"], cflags: ["needFlag","noFlag"], level: ["minLevel"], needItem: ["needItem","needQty"],
+  noItem: ["noItem"], gold: ["minGold"], quest: ["quest","questState"], varc: ["varName","varCmp","varValue"],
+};
+// ok — чей набор «открыто кнопкой» (по умолчанию сам объект условий)
+function fxShown(c, name, ok){ return FX_HAS[name](c) || fxOpenSet(ok || c).has(name); }
+function fxClear(c, name, ok){ FX_CLEAR[name].forEach(k=> delete c[k]); fxOpenSet(ok || c).delete(name); }
 function choiceFx(i, j, c){
   const items = Array.isArray(c.items) ? c.items : [];
   const chips = fxChips(c);
@@ -6589,7 +6627,19 @@ function choiceFx(i, j, c){
       <button class="btn small danger" data-cdelit="${i}:${j}:${k}" title="Убрать предмет">✕</button>
     </div>`;
   });
-  return `<details class="fx" ${choiceHasFx(c) ? "open" : ""}>
+  // раунд «порядок»: видны только заданные части; остальное — кнопками «+ …» ниже
+  const addBtn = (name, label)=> fxShown(c, name) ? "" : `<button class="btn small fx-chip" data-fxshow="${i}:${j}:${name}">+ ${label}</button>`;
+  const effAdd = [
+    (c.items||[]).length ? "" : `<button class="btn small fx-chip" data-caddit="${i}:${j}">+ Предмет в награду</button>`,
+    (c.takeItems||[]).length ? "" : `<button class="btn small fx-chip" data-ctkadd="${i}:${j}">+ Забрать предмет</button>`,
+    addBtn("flags", "Отметку"), addBtn("varop", "Счётчик"), addBtn("next", "Следом говорит"),
+  ].join("");
+  const condAdd = [
+    addBtn("rel", "Симпатия"), addBtn("cflags", "Отметка"), addBtn("level", "Уровень героя"), addBtn("needItem", "Есть предмет"),
+    addBtn("noItem", "Нет предмета"), addBtn("gold", "Золото"), addBtn("quest", "Задание"), addBtn("varc", "Счётчик"),
+  ].join("");
+  const anyCond = FX_COND.some(n=> fxShown(c, n));
+  return `<details class="fx" data-fxbox="${i}:${j}" ${choiceHasFx(c) || fxOpenSet(c).size ? "open" : ""}>
     <summary>Последствия и условия ${chips || `<span class="hint">— нет</span>`}</summary>
     <div class="fx-body">
       <div class="lab">Что будет, если игрок выберет этот ответ</div>
@@ -6598,53 +6648,62 @@ function choiceFx(i, j, c){
         <label class="field"><span>Золото (минус — плата)</span><input type="number" data-cnum="${i}:${j}:gold" value="${Number(c.gold)||0}" step="5"></label>
         <label class="check" style="align-self:end"><input type="checkbox" data-conce="${i}:${j}" ${c.once?"checked":""}><span>Только один раз</span></label>
       </div>
-      <div class="lab">Предметы в награду</div>
-      ${rows || `<p class="hint">Пока ничего.</p>`}
-      <div><button class="btn small" data-caddit="${i}:${j}">+ Предмет</button></div>
-      <div class="lab">Забрать у игрока (отдаёт сам)</div>
+      ${(c.items||[]).length ? `<div class="lab">Предметы в награду</div>
+      ${rows}
+      <div><button class="btn small" data-caddit="${i}:${j}">+ Предмет</button></div>` : ""}
+      ${(c.takeItems||[]).length ? `<div class="lab">Забрать у игрока (отдаёт сам)</div>
       ${(c.takeItems||[]).map((it, k)=>`<div class="fx-row">
         <select data-ctkitem="${i}:${j}:${k}">${itemOptions(it.itemId).map(g=>`<optgroup label="${esc(g.group)}">${g.items.map(([v,l])=>`<option value="${esc(v)}" ${v===it.itemId?"selected":""}>${esc(l)}</option>`).join("")}</optgroup>`).join("")}</select>
         <input type="number" data-ctkqty="${i}:${j}:${k}" value="${Number(it.qty)||1}" min="1" max="999" title="Сколько">
-        <button class="btn small danger" data-ctkdel="${i}:${j}:${k}" title="Убрать">✕</button></div>`).join("") || `<p class="hint">Ничего. Если чего-то не хватит — ответ виден, но выбрать его нельзя («Нужно: …»).</p>`}
-      <div><button class="btn small" data-ctkadd="${i}:${j}">+ Забрать предмет</button></div>
-      <div class="grid2">
+        <button class="btn small danger" data-ctkdel="${i}:${j}:${k}" title="Убрать">✕</button></div>`).join("")}
+      <div><button class="btn small" data-ctkadd="${i}:${j}">+ Забрать предмет</button></div>` : ""}
+      ${fxShown(c, "flags") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>Поставить отметку</span><input type="text" class="mono" list="flagList" data-cflag="${i}:${j}:setFlag" value="${esc(c.setFlag||"")}" placeholder="например: lira_book"></label>
         <label class="field"><span>Снять отметку</span><input type="text" class="mono" list="flagList" data-cflag="${i}:${j}:clearFlag" value="${esc(c.clearFlag||"")}"></label>
-      </div>
-      <div class="grid3">
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:flags" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "varop") ? `<div class="fxg"><div class="fxg-body grid3">
         <label class="field"><span>Счётчик</span><input type="text" class="mono" list="varList" data-cflag="${i}:${j}:varOpName" value="${esc(c.varOpName||"")}" placeholder="например: helped"></label>
         <label class="field"><span>действие</span><select data-csel="${i}:${j}:varOp"><option value="add" ${c.varOp!=="set"?"selected":""}>прибавить</option><option value="set" ${c.varOp==="set"?"selected":""}>сделать равным</option></select></label>
         <label class="field"><span>число</span><input type="number" data-cnum="${i}:${j}:varOpValue" value="${c.varOpValue==null?1:Number(c.varOpValue)}"></label>
-      </div>
-      <div class="grid2">
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:varop" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "next") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>Следом говорит (после этого разговора)</span><select data-cnext="${i}:${j}"><option value="">— никто</option>${state.npcs.map(nn=>`<option value="${esc(nn.id)}" ${c.talkNext===nn.id?"selected":""}>${esc(nn.name)}${nn.hidden?" (голос)":""}</option>`).join("")}</select></label>
         <label class="field"><span>с реплики</span><select data-cnextnode="${i}:${j}"><option value="">с первой</option>${((state.npcs.find(nn=>nn.id===c.talkNext)||{}).nodes||[]).map(nd=>`<option value="${esc(nd.id)}" ${c.talkNode===nd.id?"selected":""}>${esc(short(nd.text))}</option>`).join("")}</select></label>
-      </div>
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:next" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${effAdd ? `<div class="fx-add">${effAdd}</div>` : ""}
       <div class="lab">Когда этот ответ виден</div>
-      <div class="grid2">
+      ${anyCond ? "" : `<p class="hint">Всегда. Добавьте условие — и ответ будет виден только тогда.</p>`}
+      ${fxShown(c, "rel") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>Симпатия от</span><input type="text" class="mono" data-crel="${i}:${j}:relMin" value="${c.relMin==null?"":c.relMin}" placeholder="любая"></label>
         <label class="field"><span>до</span><input type="text" class="mono" data-crel="${i}:${j}:relMax" value="${c.relMax==null?"":c.relMax}" placeholder="любая"></label>
-      </div>
-      <div class="grid3">
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:rel" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "cflags") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>Нужна отметка</span><input type="text" class="mono" list="flagList" data-cflag="${i}:${j}:needFlag" value="${esc(c.needFlag||"")}"></label>
         <label class="field"><span>И нет отметки</span><input type="text" class="mono" list="flagList" data-cflag="${i}:${j}:noFlag" value="${esc(c.noFlag||"")}"></label>
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:cflags" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "level") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>С уровня героя</span><input type="number" data-cnum="${i}:${j}:minLevel" value="${Number(c.minLevel)||0}" min="0" max="99"></label>
-      </div>
-      <div class="grid3">
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:level" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "needItem") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>Есть предмет</span><select data-csel="${i}:${j}:needItem"><option value="">— не важно</option>${itemOptions(c.needItem).map(g=>`<optgroup label="${esc(g.group)}">${g.items.map(([v,l])=>`<option value="${esc(v)}" ${v===c.needItem?"selected":""}>${esc(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>
         <label class="field"><span>сколько</span><input type="number" data-cnum="${i}:${j}:needQty" value="${Number(c.needQty)||1}" min="1" max="999"></label>
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:needItem" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "noItem") ? `<div class="fxg"><div class="fxg-body grid2">
+        <label class="field"><span>Нет предмета</span><select data-csel="${i}:${j}:noItem"><option value="">— не важно</option>${itemOptions(c.noItem).map(g=>`<optgroup label="${esc(g.group)}">${g.items.map(([v,l])=>`<option value="${esc(v)}" ${v===c.noItem?"selected":""}>${esc(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:noItem" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "gold") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>Золота не меньше</span><input type="number" data-cnum="${i}:${j}:minGold" value="${Number(c.minGold)||0}" min="0" step="5"></label>
-      </div>
-      <div class="grid3">
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:gold" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "quest") ? `<div class="fxg"><div class="fxg-body grid2">
         <label class="field"><span>Задание</span><select data-csel="${i}:${j}:quest">${questOptionsAny().map(([v,l])=>`<option value="${esc(v)}" ${v===(c.quest||"")?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
         <label class="field"><span>в состоянии</span><select data-csel="${i}:${j}:questState">${QUEST_STATES.map(([v,l])=>`<option value="${v}" ${v===(c.questState||"active")?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
-        <label class="field"><span>Нет предмета</span><select data-csel="${i}:${j}:noItem"><option value="">— не важно</option>${itemOptions(c.noItem).map(g=>`<optgroup label="${esc(g.group)}">${g.items.map(([v,l])=>`<option value="${esc(v)}" ${v===c.noItem?"selected":""}>${esc(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>
-      </div>
-      <div class="grid3">
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:quest" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${fxShown(c, "varc") ? `<div class="fxg"><div class="fxg-body grid3">
         <label class="field"><span>Счётчик</span><input type="text" class="mono" list="varList" data-cflag="${i}:${j}:varName" value="${esc(c.varName||"")}"></label>
         <label class="field"><span>должен быть</span><select data-csel="${i}:${j}:varCmp">${VAR_CMPS.map(([v,l])=>`<option value="${esc(v)}" ${v===(c.varCmp||">=")?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
         <label class="field"><span>число</span><input type="number" data-cnum="${i}:${j}:varValue" value="${Number(c.varValue)||0}"></label>
-      </div>
+      </div><button class="btn small ghost fxg-x" data-fxclear="${i}:${j}:varc" title="Убрать это — поля очистятся">✕</button></div>` : ""}
+      ${condAdd ? `<div class="fx-add">${condAdd}</div>` : ""}
       <p class="hint">Скрытый по условию ответ игрок просто не увидит. Плата золотом видна как ярлык на ответе; не хватает денег — ответ выбрать нельзя.</p>
     </div>
   </details>`;
@@ -6868,6 +6927,17 @@ function renderDialogue(scrollTo){
   root.querySelectorAll("[data-cdelit]").forEach(b=>{
     const [i,j,k] = b.dataset.cdelit.split(":").map(Number);
     b.onclick = ()=>{ n.nodes[i].choices[j].items.splice(k,1); structural(); };
+  });
+  // раскрытый вручную блок не сворачивается при перерисовке
+  root.querySelectorAll("details[data-fxbox]").forEach(d=> d.addEventListener("toggle", ()=>{ const [i,j] = d.dataset.fxbox.split(":").map(Number); const ch = n.nodes[i] && n.nodes[i].choices[j]; if (ch){ if (d.open) fxOpenSet(ch).add("_open"); else fxOpenSet(ch).delete("_open"); } }));
+  root.querySelectorAll("[data-fxshow]").forEach(b=>{
+    const [i,j,name] = b.dataset.fxshow.split(":");
+    b.onclick = ()=>{ fxOpenSet(n.nodes[Number(i)].choices[Number(j)]).add(name); renderDialogue();
+      const f = root.querySelector(`[data-fxclear="${i}:${j}:${name}"]`); const inp = f && f.parentElement.querySelector("input, select"); if (inp) inp.focus(); };
+  });
+  root.querySelectorAll("[data-fxclear]").forEach(b=>{
+    const [i,j,name] = b.dataset.fxclear.split(":");
+    b.onclick = ()=>{ fxClear(n.nodes[Number(i)].choices[Number(j)], name); structural(); };
   });
   const itemField = (attr, key, num)=> root.querySelectorAll(`[data-${attr}]`).forEach(t=>{
     const [i,j,k] = t.dataset[attr].split(":").map(Number);
@@ -7655,6 +7725,16 @@ function sceneItemsHtml(st, i){
 function sceneChk(i, field, value, label){ return `<label class="check"><input type="checkbox" data-sc="${i}:${field}" ${value?"checked":""}><span>${label}</span></label>`; }
 function pickBtn(i, kind, label){ const on = sceneEd.pick && sceneEd.pick.i===i && sceneEd.pick.kind===kind; return `<button class="btn small ${on?"primary":""}" data-spick="${i}:${kind}">${on ? "Кликайте по мини-карте… (готово)" : label}</button>`; }
 
+// редкие настройки реплики — под «Ещё», раскрыто, если что-то из них задано
+function sayMore(st, i, body){
+  const chips = [];
+  if (st.emote) chips.push(`<span class="pill">${EMOTE_GLYPH[st.emote]||""} над головой</span>`);
+  if (st.hop) chips.push(`<span class="pill">подпрыгнуть</span>`);
+  if (st.name) chips.push(`<span class="pill">имя: ${esc(st.name)}</span>`);
+  if (st.speed != null) chips.push(`<span class="pill">скорость ${esc(st.speed)}</span>`);
+  const open = chips.length || fxOpenSet(st).has("more");
+  return `<details class="fx" data-smore="${i}" ${open?"open":""}><summary>Ещё: значок над головой, имя, скорость печати ${chips.join(" ")}</summary><div class="fx-body">${body}</div></details>`;
+}
 function stepFields(st, i, s){
   const actors = sceneActors(s);
   const npcs = state.npcs.map(n=>[n.id, n.name]);
@@ -7662,8 +7742,8 @@ function stepFields(st, i, s){
     case "say":
       return `<div class="grid3">${sceneField("Кто говорит", sceneSel(i, "who", st.who, speakerOptions(s)))}${sceneField("Эмоция", sceneSel(i, "emotion", st.emotion||"normal", EMOTIONS.map(([v,l])=>[v, (EMO_ICON[v]||"") + " " + l])))}${sceneField("Портрет", sceneSel(i, "side", st.side||"auto", [["auto","сам (герой слева)"],["left","слева"],["right","справа"]]))}</div>
         <label class="field"><span>Текст (пустая строка — новая страница)</span><textarea data-sf="${i}:text" rows="3">${esc(st.text||"")}</textarea></label>
-        <div class="grid3">${sceneField("Над головой говорящего", sceneSel(i, "emote", st.emote||"", [["","— ничего"]].concat(EMOTE_ICONS)))}<div style="align-self:end">${sceneChk(i, "hop", st.hop, "подпрыгнуть")}</div>${sceneField("Имя в табличке (пусто — настоящее)", sceneTxt(i, "name", st.name, "например: ???"))}</div>
-        <div class="grid3">${sceneField("Скорость печати", sceneSel(i, "speed", st.speed==null?"45":String(st.speed), speedOptions(st.speed, 45)))}<span></span><span></span></div>`;
+        ${sayMore(st, i, `<div class="grid3">${sceneField("Над головой говорящего", sceneSel(i, "emote", st.emote||"", [["","— ничего"]].concat(EMOTE_ICONS)))}<div style="align-self:end">${sceneChk(i, "hop", st.hop, "подпрыгнуть")}</div>${sceneField("Имя в табличке (пусто — настоящее)", sceneTxt(i, "name", st.name, "например: ???"))}</div>
+        <div class="grid3">${sceneField("Скорость печати", sceneSel(i, "speed", st.speed==null?"45":String(st.speed), speedOptions(st.speed, 45)))}<span></span><span></span></div>`)}`;
     case "portrait":
       return `<div class="grid3">${sceneField("Чей", sceneSel(i, "who", st.who, speakerOptions(s).slice(1)))}${sceneField("Эмоция", sceneSel(i, "emotion", st.emotion||"normal", EMOTIONS.map(([v,l])=>[v, (EMO_ICON[v]||"") + " " + l])))}${sceneField("Сторона", sceneSel(i, "side", st.side||"auto", [["auto","сам"],["left","слева"],["right","справа"]]))}</div>${sceneChk(i, "hide", st.hide, "убрать портрет с этой стороны")}`;
     case "move":
@@ -7838,6 +7918,7 @@ function bindScene(root, s){
   const parse = (v)=> v.split(":").map(Number);
   const step = (v)=> s.steps[parse(v)[0]];
   const structural = ()=>{ commit(); renderScene(); renderOutliner(); renderCanvas(); };
+  root.querySelectorAll("details[data-smore]").forEach(d=> d.addEventListener("toggle", ()=>{ const st = s.steps[Number(d.dataset.smore)]; if (st){ if (d.open) fxOpenSet(st).add("more"); else fxOpenSet(st).delete("more"); } }));
   root.querySelector("#scClose").onclick = closeModal;
   root.querySelector("#scName").addEventListener("input", e=>{ s.name = e.target.value; });
   root.querySelector("#scName").addEventListener("change", ()=>{ commit(); render(); });
