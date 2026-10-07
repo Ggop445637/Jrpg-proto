@@ -369,6 +369,27 @@ input[type=range]{width:100%;accent-color:var(--accent);}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;}
 
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--panel);padding:9px 14px;border-radius:9px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px);}
+/* ---------- удобства раскладки: ширина и скрытие боковых панелей ---------- */
+.pane{position:relative;}
+.resizer{position:absolute;top:8px;bottom:8px;width:10px;cursor:col-resize;z-index:5;touch-action:none;}
+#outlinerPane > .resizer{right:-10px;}
+#inspectorPane > .resizer{left:-10px;}
+.resizer::after{content:"";position:absolute;top:50%;left:3px;width:4px;height:42px;margin-top:-21px;border-radius:3px;background:var(--line);opacity:0;transition:opacity .12s;}
+.resizer:hover::after,.resizer.drag::after{opacity:1;background:var(--accent);}
+body.resizing{cursor:col-resize;user-select:none;}
+@media (min-width:1101px){
+  .main{grid-template-columns:var(--lw,270px) minmax(0,1fr) var(--rw,350px);}
+  .main.no-left{grid-template-columns:minmax(0,1fr) var(--rw,350px);}
+  .main.no-right{grid-template-columns:var(--lw,270px) minmax(0,1fr);}
+  .main.no-left.no-right{grid-template-columns:minmax(0,1fr);}
+  .main.no-left #outlinerPane,.main.no-right #inspectorPane{display:none;}
+}
+@media (max-width:1100px){ .resizer,.lay-btn{display:none!important;} }
+.lay-grp{display:inline-flex;gap:2px;}
+.lay-grp .btn{padding:6px 8px;}
+.lay-grp .btn svg{width:16px;height:16px;}
+.sec-all{display:flex;justify-content:flex-end;gap:4px;padding:4px 8px 0;}
+.sec-all .btn{font-weight:500;color:var(--muted);}
 .toast button{background:transparent;border:1px solid color-mix(in srgb, var(--panel) 40%, transparent);color:var(--panel);border-radius:6px;padding:3px 9px;cursor:pointer;font-weight:600;}
 </style>
 
@@ -376,6 +397,7 @@ input[type=range]{width:100%;accent-color:var(--accent);}
   <header class="topbar" id="topbar"></header>
   <div class="main">
     <aside class="pane" id="outlinerPane">
+      <div class="resizer" data-side="left" title="Потяните, чтобы изменить ширину. Двойной клик — как было"></div>
       <div class="pane-head" style="flex-direction:column;align-items:stretch"><div class="ttabs" id="treeTabs"></div><input class="search" id="treeSearch" type="search" placeholder="Поиск по всему: имя, карта, id…  (Ctrl+K — быстрый переход)" autocomplete="off"></div>
       <div class="pane-body" id="outliner"></div>
     </aside>
@@ -396,6 +418,7 @@ input[type=range]{width:100%;accent-color:var(--accent);}
       <div class="statusbar" id="statusbar"></div>
     </section>
     <aside class="pane" id="inspectorPane">
+      <div class="resizer" data-side="right" title="Потяните, чтобы изменить ширину. Двойной клик — как было"></div>
       <div class="pane-body" id="inspector" style="padding:0;"></div>
     </aside>
   </div>
@@ -1112,7 +1135,9 @@ let ui = {
 };
 function saveUi(){
   const keep = {tab:ui.tab, autoGame:ui.autoGame, raiseStep:ui.raiseStep, decoType:ui.decoType, stairsDir:ui.stairsDir, bridgeStyle:ui.bridgeStyle, propType:ui.propType, brush:ui.brush, brushSize:ui.brushSize, brushShape:ui.brushShape, levelValue:ui.levelValue, place:ui.place,
-    showHeights:ui.showHeights, showLabels:ui.showLabels, showArrivals:ui.showArrivals, collapsed:ui.collapsed, secs:ui.secs, ctx:ui.ctx};
+    showHeights:ui.showHeights, showLabels:ui.showLabels, showArrivals:ui.showArrivals, collapsed:ui.collapsed, secs:ui.secs, ctx:ui.ctx,
+    pathKind:ui.pathKind, pathWidth:ui.pathWidth, mechType:ui.mechType, dungeonLook:ui.dungeonLook, propRandRot:ui.propRandRot, propRandScale:ui.propRandScale,
+    lw:ui.lw, rw:ui.rw, hideL:ui.hideL, hideR:ui.hideR, theme:ui.theme};
   lsSet(LS_UI, JSON.stringify(keep));
 }
 function loadUi(){
@@ -2486,6 +2511,78 @@ function selGlyph(sel){
   return glyph("");
 }
 
+/* ============================ раскладка и тема ============================
+   Только вид редактора: ширина/скрытие боковых панелей и светлая/тёмная тема.
+   Хранится в ui (localStorage), на мир и игру не влияет. */
+const THEMES = {"":"как в системе", light:"светлая", dark:"тёмная"};
+const LAY_SVG = (inner)=> `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">${inner}</svg>`;
+const LAY_ICON = {
+  left: LAY_SVG(`<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M5.5 2.5v11"/><path d="M2 4.5h3M2 6.5h3" stroke-width="1"/>`),
+  right: LAY_SVG(`<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M10.5 2.5v11"/><path d="M11 4.5h3M11 6.5h3" stroke-width="1"/>`),
+  auto: LAY_SVG(`<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/>`),
+  light: LAY_SVG(`<circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/>`),
+  dark: LAY_SVG(`<path d="M13.5 9.5A5.5 5.5 0 1 1 6.5 2.5a4.5 4.5 0 0 0 7 7z"/>`),
+};
+const PANE_W = {left:[270, 190, 560], right:[350, 260, 720]};   // [обычная, мин, макс]
+function applyLayout(){
+  const main = document.querySelector(".main");
+  if (!main) return;
+  main.style.setProperty("--lw", clamp(Number(ui.lw)||PANE_W.left[0], PANE_W.left[1], PANE_W.left[2]) + "px");
+  main.style.setProperty("--rw", clamp(Number(ui.rw)||PANE_W.right[0], PANE_W.right[1], PANE_W.right[2]) + "px");
+  main.classList.toggle("no-left", !!ui.hideL);
+  main.classList.toggle("no-right", !!ui.hideR);
+  if (ui.theme) document.documentElement.dataset.theme = ui.theme; else delete document.documentElement.dataset.theme;
+}
+function togglePane(side){
+  if (side === "left") ui.hideL = !ui.hideL; else ui.hideR = !ui.hideR;
+  applyLayout(); saveUi(); renderTopbar(); requestCanvas();
+}
+function toggleFocusMode(){
+  const hide = !(ui.hideL && ui.hideR);
+  ui.hideL = hide; ui.hideR = hide;
+  applyLayout(); saveUi(); renderTopbar(); requestCanvas();
+  toast(hide ? "Только карта. Клавиша \\ — вернуть панели" : "Панели снова на месте");
+}
+function cycleTheme(){
+  const order = ["", "light", "dark"];
+  ui.theme = order[(order.indexOf(ui.theme||"") + 1) % order.length];
+  applyLayout(); saveUi(); _tcss = null; _pats = null; _hSprites.clear(); renderTopbar(); requestCanvas();
+  toast("Тема: " + THEMES[ui.theme]);
+}
+document.querySelectorAll(".resizer").forEach(h=>{
+  const side = h.dataset.side;
+  h.addEventListener("pointerdown", ev=>{
+    if (ev.button !== 0) return;
+    ev.preventDefault();
+    h.setPointerCapture(ev.pointerId);
+    h.classList.add("drag"); document.body.classList.add("resizing");
+    const r = h.parentElement.getBoundingClientRect();
+    const move = (e)=>{
+      const [, mn, mx] = PANE_W[side];
+      const w = Math.round(clamp(side === "left" ? e.clientX - r.left : r.right - e.clientX, mn, mx));
+      if (side === "left") ui.lw = w; else ui.rw = w;
+      applyLayout();
+    };
+    const up = ()=>{
+      h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up);
+      h.classList.remove("drag"); document.body.classList.remove("resizing");
+      saveUi(); requestCanvas();
+    };
+    h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+  });
+  h.addEventListener("dblclick", ()=>{ if (side === "left") ui.lw = null; else ui.rw = null; applyLayout(); saveUi(); requestCanvas(); });
+});
+// «Развернуть все / Свернуть все» над разделами инспектора — когда их много
+function addSecAllBar(el){
+  const secs = el.querySelectorAll(":scope > details.sec, :scope > * > details.sec");
+  if (secs.length < 3) return;
+  const bar = document.createElement("div");
+  bar.className = "sec-all";
+  bar.innerHTML = `<button class="btn ghost small" data-secall="1" title="Открыть все разделы ниже">Развернуть все</button><button class="btn ghost small" data-secall="0" title="Закрыть все разделы ниже — видно только заголовки">Свернуть все</button>`;
+  secs[0].parentNode.insertBefore(bar, secs[0]);
+  bar.querySelectorAll("[data-secall]").forEach(b=> b.onclick = ()=>{ const open = b.dataset.secall === "1"; secs.forEach(d=>{ d.open = open; ui.secs[d.dataset.sec] = open; }); saveUi(); });
+}
+
 /* ============================ верхняя панель ============================ */
 let _dirtyB = null, _dirtyH = "";
 function isGameDirty(){
@@ -2502,6 +2599,11 @@ function renderTopbar(){
     <div class="brand"><h1>Mapwright</h1><span class="sub">редактор мира jrpg-proto</span></div>
     <button class="btn ghost" id="tbUndo" title="Отменить (Ctrl+Z)" ${undoStack.length?"":"disabled"}>${glyph("undo")}</button>
     <button class="btn ghost" id="tbRedo" title="Повторить (Ctrl+Shift+Z)" ${redoStack.length?"":"disabled"}>${glyph("redo")}</button>
+    <span class="lay-grp">
+      <button class="btn ghost lay-btn ${ui.hideL?"":"on"}" id="tbLeft" title="${ui.hideL?"Показать":"Скрыть"} левую панель (дерево)">${LAY_ICON.left}</button>
+      <button class="btn ghost lay-btn ${ui.hideR?"":"on"}" id="tbRight" title="${ui.hideR?"Показать":"Скрыть"} правую панель (свойства)">${LAY_ICON.right}</button>
+      <button class="btn ghost" id="tbTheme" title="Тема: ${THEMES[ui.theme||""]} — нажмите, чтобы сменить">${LAY_ICON[ui.theme||"auto"]}</button>
+    </span>
     <span class="grow"></span>
     <button class="btn problems-btn ${errs?"has-err":(warns?"has-warn":"")}" id="tbProblems" title="Что стоит поправить">
       ${errs||warns ? glyph("warn") : glyph("ok")} ${errs||warns ? `${errs?`${errs} ${plural(errs,"ошибка","ошибки","ошибок")}`:""}${errs&&warns?" · ":""}${warns?`${warns} ${plural(warns,"замечание","замечания","замечаний")}`:""}` : "Ошибок нет"}
@@ -2538,6 +2640,9 @@ function renderTopbar(){
   const ta = el.querySelector("#tbAuto");
   if (ta) ta.onclick = (ev)=>{ ev.preventDefault(); if (ui.autoGame && ui.autoGameBlocked){ fileHandle.requestPermission({mode:"readwrite"}).then(p=>{ ui.autoGameBlocked = p !== "granted"; renderTopbar(); gameAutosaveNow(); }); return; } toggleAutoGame(); };
   el.querySelector("#tbHelp").onclick = openHelp;
+  el.querySelector("#tbLeft").onclick = ()=> togglePane("left");
+  el.querySelector("#tbRight").onclick = ()=> togglePane("right");
+  el.querySelector("#tbTheme").onclick = cycleTheme;
   el.querySelector("#tbMenu").onclick = (ev)=>{ ev.stopPropagation(); ui.menu = !ui.menu; renderTopbar(); };
   el.querySelectorAll("[data-m]").forEach(b=> b.onclick = ()=>{ ui.menu = false; renderTopbar(); menuAction(b.dataset.m); });
 }
@@ -4475,6 +4580,7 @@ function renderInspector(){
   el.innerHTML = html;
   F.binds.forEach(b=>b());
   el.querySelectorAll("details.sec").forEach(d=> d.addEventListener("toggle", ()=>{ ui.secs[d.dataset.sec] = d.open; saveUi(); }));
+  addSecAllBar(el);
   decorateTips(el);
 }
 
@@ -7885,7 +7991,15 @@ function openHelp(){
       ${k(["Ctrl","Shift","Z"], "повторить")}
       ${k(["Ctrl","S"], "сохранить в игру")}
       ${k(["Esc"], "отмена / снять выделение")}
+      ${k(["\\"], "спрятать / вернуть обе боковые панели — только карта")}
     </div>
+    <h3 style="font-size:16px;margin:16px 0 6px;">Удобства</h3>
+    <ul class="steps">
+      <li>Границу между картой и боковой панелью можно <b>тянуть мышью</b> — панель станет шире или уже. Двойной клик по границе — вернуть как было.</li>
+      <li>Значки рядом с «Отменить/Повторить»: <b>спрятать левую или правую панель</b> (больше места для карты) и <b>тема</b> — светлая, тёмная или как в системе.</li>
+      <li>Над разделами справа — <b>«Развернуть все» / «Свернуть все»</b>, чтобы быстро найти нужный раздел.</li>
+      <li>Редактор запоминает выбранные инструменты (вид и ширину дорожки, механизм, вход в данж, поворот и размер декора).</li>
+    </ul>
     <h3 style="font-size:16px;margin:16px 0 6px;">Сохранение</h3>
     <p class="hint">Редактор сам хранит работу в этом браузере. «Сохранить в игру» в Chrome или Edge один раз спросит файл — выберите <code>world/world_data.json</code> в папке игры, дальше запись идёт туда сразу. В других браузерах файл скачивается — положите его в <code>world/</code> вручную.</p>
   `);
@@ -9495,6 +9609,7 @@ document.addEventListener("keydown", ev=>{
   }
   if (key === "Enter"){ if (ui.sel) enterSel(ui.sel); return; }
   if (key === "?"){ openHelp(); return; }
+  if (is("Backslash", "\\")){ toggleFocusMode(); return; }
   const arrows = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]};
   if (arrows[key] && (ui.multi||[]).length > 1){
     ev.preventDefault();
@@ -9661,6 +9776,7 @@ function repairState(){
 }
 function start(initial){
   loadUi();
+  applyLayout();
   let data = initial && Object.keys(initial).length ? initial : null;
   if (!data){
     for (const k of [LS_STATE, LS_STATE_V2]){
